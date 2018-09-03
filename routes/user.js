@@ -89,6 +89,12 @@ module.exports = (app) => {
 
       if (!response.ok) return res.status(500).send(json);
 
+      const client = await pool.connect();
+      await client.query('UPDATE users SET metroareaid = $1 WHERE username = $2', [
+        metroAreaId,
+        sptUsername,
+      ]);
+
       return res.send('ok');
     } catch (err) {
       console.error(err);
