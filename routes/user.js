@@ -76,6 +76,7 @@ module.exports = (app) => {
 
   // Add city and create playlist
   app.post('/api/setCity', async (req, res) => {
+    const { metroAreaId, sptUsername } = req.body;
     try {
       const response = await fetch(PLAYLIST_LAMBDA_URL, {
         headers: {
