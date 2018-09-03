@@ -64,7 +64,11 @@ module.exports = (app) => {
       const { rows: userRows } = await client.query(query, values);
       const [user] = userRows;
       // return UserService.initalizePlaylist({ id, access_token, refresh_token, city }, res);
-      return res.send(user);
+      return res.send({
+        user,
+        access_token,
+        refresh_token,
+      });
     } catch (err) {
       console.error(err);
       return res.status(500).send(err);
@@ -96,7 +100,7 @@ module.exports = (app) => {
         sptUsername,
       ]);
 
-      return res.send('ok');
+      return res.send({ playlistId: json.playlistId });
     } catch (err) {
       console.error(err);
       return res.status(500).send(err);
