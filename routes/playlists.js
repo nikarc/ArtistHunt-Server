@@ -1,35 +1,48 @@
 const fetch = require('node-fetch');
 const { Pool } = require('pg');
 
+const { SONGKICK_API_KEY } = process.env;
+
 const pool = new Pool();
 
-const { PLAYLIST_LAMBDA_URL, PLAYLIST_LAMBDA_API_KEY } = process.env;
-
 module.exports = (app) => {
-  app.post('/playlists/setup', async (req, res) => {
-    const { metroAreaId, sptUsername } = req.body;
+  app.post('/api/getUserPlaylist', async (req, res) => {
+    const { username } = req.body;
+
     try {
-      const playlistRes = await fetch(PLAYLIST_LAMBDA_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Api-Key': PLAYLIST_LAMBDA_API_KEY,
-        },
-        body: JSON.stringify({
-          metroAreaId,
-          sptUsername,
-        }),
+      const client = await pool.connect();
+      const { rows } = await client.query('SELECT id, username from users WHERE username = $1', [username]);
+      const [user] = rows;
+
+      const { rows: trackRows } = await client.query('SELECT * FROM tracks WHERE userid = $1', [user.id]);
+
+      // Get event details
+      const tracks = [];
+      const eventPromises = trackRows.map(t => new Promise(async (resolve, reject) => {
+        try {
+          const response = await fetch(`https://api.songkick.com/api/3.0/events/${t.eventid}.json?apikey=${SONGKICK_API_KEY}`);
+          const json = await response.json();
+
+          if (!response.ok) {
+            return reject(json);
+          }
+
+          tracks.push(json.resultsPage.results.event);
+          return resolve();
+        } catch (err) {
+          console.error(err);
+          return reject(err);
+        }
+      }));
+
+      await Promise.all(eventPromises);
+
+      return res.send({
+        tracks,
       });
-      const json = await playlistRes.json();
-
-      if (!playlistRes.ok) {
-        return res.status(500).send(new Error(JSON.stringify(json)));
-      }
-
-      return res.send('ok');
-    } catch (e) {
-      console.error(e);
-      return res.status(500).send(e);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).send(err);
     }
   });
 };
