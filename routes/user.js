@@ -78,6 +78,7 @@ module.exports = (app) => {
     const { metroAreaId, sptUsername } = req.body;
     try {
       const response = await fetch(PLAYLIST_LAMBDA_URL, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Api-Key': PLAYLIST_LAMBDA_API_KEY,
