@@ -18,20 +18,19 @@ module.exports = (app) => {
     if (!code) return res.status(400).send('Missing required parameters in request body');
 
     try {
-      const form = new URLSearchParams();
-      form.append('code', code);
-      form.append('grant_type', 'authorization_code');
-      form.append('redirect_uri', SPOTIFY_REDIRECT);
+      // const form = new URLSearchParams();
+      // form.append('code', code);
+      // form.append('grant_type', 'authorization_code');
+      // form.append('redirect_uri', SPOTIFY_REDIRECT);
 
       const authorization = Buffer.from(`${SPOTIFY_CLIENTID}:${SPOTIFY_SECRET}`).toString('base64');
 
-      const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
+      const tokenResponse = await fetch(`https://accounts.spotify.com/api/token?code=${code}&grant_type=authorization_code&redirect_uri=${SPOTIFY_REDIRECT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           Authorization: `Basic ${authorization}`,
         },
-        body: form,
       });
       const tokenJson = await tokenResponse.json();
 
