@@ -68,6 +68,7 @@ module.exports = (app) => {
         user,
         access_token,
         refresh_token,
+        expiresIn,
       });
     } catch (err) {
       console.error(err);
@@ -104,6 +105,24 @@ module.exports = (app) => {
     } catch (err) {
       console.error(err);
       return res.status(500).send(err);
+    }
+  });
+
+  app.get('api/:username/getUserPlaylist', async (req, res) => {
+    const { username } = req.params;
+    const client = await pool.connect();
+
+    try {
+      const { rows: userRows } = await client.query('SELECT id FROM users WHERE username = $1', [username]);
+      const [user] = userRows;
+      const { id } = user;
+
+      const { rows: tracks } = await client.query('SELECT * FROM tracks WHERE userid = $1', [id]);
+
+      res.send({ tracks });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send(err);
     }
   });
 };
