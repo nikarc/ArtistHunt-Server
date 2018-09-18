@@ -120,7 +120,7 @@ module.exports = (app) => {
 
       const { rows: tracks } = await client.query('SELECT * FROM tracks WHERE userid = $1', [id]);
 
-      const trackPromises = tracks.slice(0, 1).map((t, index) => new Promise(async (resolve, reject) => {
+      const trackPromises = tracks.map((t, index) => new Promise(async (resolve, reject) => {
         try {
           const url = `https://api.songkick.com/api/3.0/events/${t.eventid}.json?apikey=${SONGKICK_API_KEY}`;
           console.log('url: ', url);
