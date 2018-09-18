@@ -8,7 +8,8 @@ const {
   SPOTIFY_REDIRECT,
   PLAYLIST_LAMBDA_URL,
   PLAYLIST_LAMBDA_API_KEY,
- } = process.env;
+  SONGKICK_API_KEY,
+} = process.env;
 
 module.exports = (app) => {
   // create user
@@ -108,7 +109,7 @@ module.exports = (app) => {
     }
   });
 
-  app.get('api/:username/getUserPlaylist', async (req, res) => {
+  app.get('/api/:username/getUserPlaylist', async (req, res) => {
     const { username } = req.params;
     const client = await pool.connect();
 
@@ -118,6 +119,25 @@ module.exports = (app) => {
       const { id } = user;
 
       const { rows: tracks } = await client.query('SELECT * FROM tracks WHERE userid = $1', [id]);
+
+      const trackPromises = tracks.slice(0, 1).map((t, index) => new Promise(async (resolve, reject) => {
+        try {
+          const url = `https://api.songkick.com/api/3.0/events/${t.eventid}.json?apikey=${SONGKICK_API_KEY}`;
+          console.log('url: ', url);
+          const response = await fetch(url);
+          const json = await response.json();
+
+          if (!response.ok) return reject(json);
+
+          tracks[index].event = json.resultsPage.results.event;
+          return resolve();
+        } catch (err) {
+          console.error(err);
+          return reject(err);
+        }
+      }));
+
+      await Promise.all(trackPromises);
 
       res.send({ tracks });
     } catch (err) {
