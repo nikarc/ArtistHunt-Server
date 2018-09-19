@@ -50,14 +50,26 @@ module.exports = (app) => {
       }
 
       const { id, uri } = meJson;
-
-      // Check if user already exists in our database
-      const { rows: userExistsRows } = await client.query('SELECT id FROM users WHERE username = $1', [id]);
-
-      if (!userExistsRows.length) return res.send({ userExists: true });
-
+      let user;
       const expiresIn = new Date();
       expiresIn.setHours(expiresIn.getHours() + 1);
+      const returnObject = {
+        access_token,
+        refresh_token,
+        expiresIn,
+      };
+
+      // Check if user already exists in our database
+      const { rows: userExistsRows } = await client.query('SELECT * FROM users WHERE username = $1', [id]);
+      ([user] = userExistsRows);
+
+      if (userExistsRows.length) {
+        return res.send({
+          userExists: true,
+          user,
+          ...returnObject,
+        });
+      }
 
       const query = `INSERT INTO users(username, uri, spttoken, sptrefreshtoken, tokenexpires)
                     VALUES($1, $2, $3, $4, $5)
@@ -65,13 +77,12 @@ module.exports = (app) => {
       const values = [id, uri, access_token, refresh_token, expiresIn];
 
       const { rows: userRows } = await client.query(query, values);
-      const [user] = userRows;
-      // return UserService.initalizePlaylist({ id, access_token, refresh_token, city }, res);
+      ([user] = userRows);
+
       return res.send({
         user,
-        access_token,
-        refresh_token,
-        expiresIn,
+        userExists: false,
+        ...returnObject,
       });
     } catch (err) {
       console.error(err);
