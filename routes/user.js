@@ -2,6 +2,7 @@ const { Pool } = require('pg');
 const fetch = require('node-fetch');
 
 const pool = new Pool();
+
 const {
   SPOTIFY_CLIENTID,
   SPOTIFY_SECRET,
@@ -79,6 +80,27 @@ module.exports = (app) => {
     }
   });
 
+  app.post('/api/checkUser', async (req, res) => {
+    const { username } = req.body;
+    console.log(username);
+    const client = await pool.connect();
+    try {
+      const { rows } = await client.query('SELECT id FROM users WHERE username = $1', [username]);
+      console.log(rows);
+
+      if (!rows.length) {
+        return res.send(false);
+      }
+
+      return res.send(true);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).send(err);
+    } finally {
+      client.release();
+    }
+  });
+
   // Add city and create playlist
   app.post('/api/setCity', async (req, res) => {
     const { metroAreaId, sptUsername } = req.body;
@@ -106,6 +128,8 @@ module.exports = (app) => {
     } catch (err) {
       console.error(err);
       return res.status(500).send(err);
+    } finally {
+      client.release();
     }
   });
 
@@ -143,6 +167,8 @@ module.exports = (app) => {
     } catch (err) {
       console.error(err);
       res.status(500).send(err);
+    } finally {
+      client.release();
     }
   });
 };
