@@ -20,11 +20,6 @@ module.exports = (app) => {
     if (!code) return res.status(400).send('Missing required parameters in request body');
 
     try {
-      // const form = new URLSearchParams();
-      // form.append('code', code);
-      // form.append('grant_type', 'authorization_code');
-      // form.append('redirect_uri', SPOTIFY_REDIRECT);
-
       const authorization = Buffer.from(`${SPOTIFY_CLIENTID}:${SPOTIFY_SECRET}`).toString('base64');
 
       const tokenResponse = await fetch(`https://accounts.spotify.com/api/token?code=${code}&grant_type=authorization_code&redirect_uri=${SPOTIFY_REDIRECT}`, {
@@ -55,6 +50,12 @@ module.exports = (app) => {
       }
 
       const { id, uri } = meJson;
+
+      // Check if user already exists in our database
+      const { rows: userExistsRows } = await client.query('SELECT id FROM users WHERE username = $1', [id]);
+
+      if (!userExistsRows.length) return res.send({ userExists: true });
+
       const expiresIn = new Date();
       expiresIn.setHours(expiresIn.getHours() + 1);
 
@@ -72,27 +73,6 @@ module.exports = (app) => {
         refresh_token,
         expiresIn,
       });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).send(err);
-    } finally {
-      client.release();
-    }
-  });
-
-  app.post('/api/checkUser', async (req, res) => {
-    const { username } = req.body;
-    console.log(username);
-    const client = await pool.connect();
-    try {
-      const { rows } = await client.query('SELECT id FROM users WHERE username = $1', [username]);
-      console.log(rows);
-
-      if (!rows.length) {
-        return res.send(false);
-      }
-
-      return res.send(true);
     } catch (err) {
       console.error(err);
       return res.status(500).send(err);
