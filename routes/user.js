@@ -95,6 +95,7 @@ module.exports = (app) => {
   // Add city and create playlist
   app.post('/api/setCity', async (req, res) => {
     const { metroAreaId, sptUsername } = req.body;
+    const client = await pool.connect();
     console.log('SET USER METRO AREA ID: ', metroAreaId, sptUsername);
     try {
       const response = await fetch(PLAYLIST_LAMBDA_URL, {
@@ -109,7 +110,6 @@ module.exports = (app) => {
 
       if (!response.ok) return res.status(500).send(json);
 
-      const client = await pool.connect();
       await client.query('UPDATE users SET metroareaid = $1 WHERE username = $2', [
         metroAreaId,
         sptUsername,
@@ -130,6 +130,13 @@ module.exports = (app) => {
 
     try {
       const { rows: userRows } = await client.query('SELECT id FROM users WHERE username = $1', [username]);
+
+      if (!userRows || !userRows.length) {
+        return res.status(401).send({
+          message: `User not found: ${username}`,
+        });
+      }
+
       const [user] = userRows;
       const { id } = user;
 
@@ -138,7 +145,7 @@ module.exports = (app) => {
       const trackPromises = tracks.map((t, index) => new Promise(async (resolve, reject) => {
         try {
           const url = `https://api.songkick.com/api/3.0/events/${t.eventid}.json?apikey=${SONGKICK_API_KEY}`;
-          console.log('url: ', url);
+
           const response = await fetch(url);
           const json = await response.json();
 
