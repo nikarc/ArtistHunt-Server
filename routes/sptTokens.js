@@ -4,6 +4,9 @@
 
 const axios = require('axios');
 const btoa = require('btoa');
+const { Pool } = require('pg');
+
+const pool = new Pool();
 
 const {
   SPOTIFY_CLIENTID: SPOTIFY_CLIENT_ID,
@@ -30,8 +33,49 @@ module.exports = (app) => {
         redirect_uri: SPOTIFY_CLIENT_CALLBACK_URL,
         code: authorization_code,
       },
-    }).then(({ data: json }) => {
-      response.set('Content-Type', 'text/json').status(200).send(json);
+    }).then(async ({ data: json }) => {
+      const { access_token, refresh_token } = json;
+      let client;
+      try {
+        client = await pool.connect();
+        const me = await axios({
+          url: 'https://api.spotify.com/v1/me',
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        });
+        console.log('ME: ', me);
+
+        const { id, uri } = me;
+        const { rows } = await client.query('SELECT id FROM users WHERE username = $1', [id]);
+
+        if (rows.length) {
+          // User exists dont create
+          const [user] = rows;
+          return response.set('Content-Type', 'text/json').status(200).send({
+            ...json,
+            user,
+            userExists: true,
+          });
+        }
+
+        // Create user
+        const query = `INSERT INTO users(username, uri, spttoken, sptrefreshtoken)
+                        VALUES($1, $2, $3, $4)
+                        RETURNING *`;
+        const { rows: userRows } = await client.query(query, [id, uri, access_token, refresh_token]);
+        const [user] = userRows;
+
+        return response.set('Content-Type', 'text/json').status(200).send({
+          ...json,
+          user,
+          userExists: false,
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        client.release();
+      }
     }).catch(({ response: err }) => {
       response.set('Content-Type', 'text/json').status(402).send(err.data);
     });

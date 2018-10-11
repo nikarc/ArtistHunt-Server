@@ -16,27 +16,10 @@ module.exports = (app) => {
   // create user
   app.post('/api/signup', async (req, res) => {
     const client = await pool.connect();
-    const { code } = req.body;
-    if (!code) return res.status(400).send('Missing required parameters in request body');
+    const { access_token, refresh_token } = req.body;
+    if (!access_token || !refresh_token) return res.status(400).send('Missing required parameters in request body');
 
     try {
-      const authorization = Buffer.from(`${SPOTIFY_CLIENTID}:${SPOTIFY_SECRET}`).toString('base64');
-
-      const tokenResponse = await fetch(`https://accounts.spotify.com/api/token?code=${code}&grant_type=authorization_code&redirect_uri=${SPOTIFY_REDIRECT}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${authorization}`,
-        },
-      });
-      const tokenJson = await tokenResponse.json();
-
-      if (!tokenResponse.ok) {
-        return res.status(500).send(tokenJson);
-      }
-
-      const { access_token, refresh_token } = tokenJson;
-
       // get user info
       const meResponse = await fetch('https://api.spotify.com/v1/me', {
         headers: {
