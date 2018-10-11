@@ -19,7 +19,7 @@ module.exports = (app) => {
    */
   app.post('/api/token', async (req, res) => {
     const { body: { code: authorization_code } } = req;
-
+    console.log(`Auth Code: ${authorization_code}`);
     try {
       const { data: json } = await axios({
         method: 'POST',
@@ -37,7 +37,7 @@ module.exports = (app) => {
 
       res.json(json);
     } catch (err) {
-      console.error(err);
+      console.error(err.data);
       res.status(500).json(err.data);
     }
   });
@@ -64,7 +64,7 @@ module.exports = (app) => {
 
       res.json(json);
     } catch (err) {
-      console.error(err);
+      console.error(err.data);
       res.status(500).json(err.data);
     }
   });
