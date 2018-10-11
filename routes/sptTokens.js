@@ -21,7 +21,7 @@ module.exports = (app) => {
     const { body: { code: authorization_code } } = req;
 
     try {
-      const { data: json } = fetch('https://accounts.spotify.com/api/token', {
+      const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -33,19 +33,28 @@ module.exports = (app) => {
           code: authorization_code,
         },
       });
+      const tokenJson = await tokenResponse.json();
+      console.log('tokenJson: ', tokenJson);
 
-      res.json(json);
+      if (!tokenResponse.ok) {
+        return res.status(tokenResponse.status).json(tokenJson);
+      }
+
+      res.json(tokenJson);
     } catch (err) {
       console.error(err);
       res.status(500).json(err.data);
     }
   });
 
+  /**
+   * Route to refresh Spotify token
+   */
   app.post('/api/refresh_token', async (req, res) => {
     const { body: { refresh_token } } = req;
 
     try {
-      const { data: json } = fetch('https://accounts.spotify.com/api/token', {
+      const refreshResponse = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -56,8 +65,13 @@ module.exports = (app) => {
           refresh_token,
         }),
       });
+      const refreshJson = await refreshResponse.json();
 
-      res.json(json);
+      if (!refreshResponse.ok) {
+        return res.status(refreshResponse.status).json(refreshJson);
+      }
+
+      res.json(refreshJson);
     } catch (err) {
       console.error(err);
       res.status(500).json(err.data);
