@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
+const axios = require('axios');
+const qs = require('qs');
 require('dotenv').config();
 
 const { PORT } = process.env;
@@ -11,6 +13,14 @@ app.use(morgan('combined'));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+// accept form-urlencoded submissions
+axios.interceptors.request.use((request) => {
+  if (request.data && request.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+    request.data = qs.stringify(request.data);
+  }
+  return request;
+});
 
 app.post('/test', (req, res) => {
   res.send('ArtistHunt');
