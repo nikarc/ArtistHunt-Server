@@ -27,11 +27,11 @@ module.exports = (app) => {
           'Content-Type': 'application/x-www-form-urlencoded',
           Authorization: `Basic ${Buffer.from(base64String).toString('base64')}`,
         },
-        data: {
+        data: JSON.stringify({
           grant_type: 'authorization_code',
           redirect_uri: SPOTIFY_REDIRECT,
           code: authorization_code,
-        },
+        }),
       });
       const tokenJson = await tokenResponse.json();
       console.log('tokenJson: ', tokenJson);
