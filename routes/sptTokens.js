@@ -2,7 +2,7 @@
  * Routes to handle Spotify token creation and refresh
  */
 
-const fetch = require('node-fetch');
+const axios = require('axios');
 
 const {
   SPOTIFY_CLIENTID,
@@ -21,26 +21,21 @@ module.exports = (app) => {
     const { body: { code: authorization_code } } = req;
 
     try {
-      const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
+      const { data: json } = await axios({
         method: 'POST',
+        url: 'https://accounts.spotify.com/api/token',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${Buffer.from(base64String).toString('base64')}`,
+          Authorization: `Basic ${base64String}`,
         },
-        data: JSON.stringify({
+        data: {
           grant_type: 'authorization_code',
           redirect_uri: SPOTIFY_REDIRECT,
           code: authorization_code,
-        }),
+        },
       });
-      const tokenJson = await tokenResponse.json();
-      console.log('tokenJson: ', tokenJson);
 
-      if (!tokenResponse.ok) {
-        return res.status(tokenResponse.status).json(tokenJson);
-      }
-
-      res.json(tokenJson);
+      res.json(json);
     } catch (err) {
       console.error(err);
       res.status(500).json(err.data);
@@ -54,24 +49,20 @@ module.exports = (app) => {
     const { body: { refresh_token } } = req;
 
     try {
-      const refreshResponse = await fetch('https://accounts.spotify.com/api/token', {
+      const { data: json } = await axios({
         method: 'POST',
+        url: 'https://accounts.spotify.com/api/token',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${Buffer.from(base64String).toString('base64')}`,
+          Authorization: `Basic ${base64String}`,
         },
-        data: JSON.stringify({
+        data: {
           grant_type: 'refresh_token',
           refresh_token,
-        }),
+        },
       });
-      const refreshJson = await refreshResponse.json();
 
-      if (!refreshResponse.ok) {
-        return res.status(refreshResponse.status).json(refreshJson);
-      }
-
-      res.json(refreshJson);
+      res.json(json);
     } catch (err) {
       console.error(err);
       res.status(500).json(err.data);
