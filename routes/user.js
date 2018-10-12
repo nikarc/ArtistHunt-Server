@@ -4,9 +4,6 @@ const fetch = require('node-fetch');
 const pool = new Pool();
 
 const {
-  SPOTIFY_CLIENTID,
-  SPOTIFY_SECRET,
-  SPOTIFY_REDIRECT,
   PLAYLIST_LAMBDA_URL,
   PLAYLIST_LAMBDA_API_KEY,
   SONGKICK_API_KEY,
